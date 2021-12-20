@@ -30,7 +30,7 @@ public class ProcessService
 
     public async Task tcpListen(int port, int nextPort)
     {
-        TcpListener _listener = new TcpListener(IPAddress.Loopback, port); 
+        TcpListener _listener = new TcpListener(IPAddress.IPv6Loopback, port); 
         _listener.Start();
 
         // Console.WriteLine($"Running listener: {Thread.CurrentThread.ManagedThreadId}");
@@ -61,7 +61,7 @@ public class ProcessService
                             if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit)
                             {
                                 TcpClient _sender = new TcpClient();
-                                await _sender.ConnectAsync(IPAddress.Loopback, nextPort);
+                                await _sender.ConnectAsync(IPAddress.IPv6Loopback, nextPort);
                                 await _sender.GetStream().WriteAsync(buffer, 0, len);
                                 _sender.GetStream().Close();
                                 _sender.Close();
@@ -106,7 +106,7 @@ public class ProcessService
             if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
             {
                 TcpClient _sender = new TcpClient();
-                await _sender.ConnectAsync(IPAddress.Loopback, nextPort);
+                await _sender.ConnectAsync(IPAddress.IPv6Loopback, nextPort);
                 await _sender.GetStream().WriteAsync(Encoding.ASCII.GetBytes(msg.ToString()));
                 Console.WriteLine($"{port}: Send TOKEN {_myToken}");
                 _sender.GetStream().Close();
@@ -124,7 +124,7 @@ public class ProcessService
             else
             {
                 TcpClient _sender = new TcpClient();
-                await _sender.ConnectAsync(IPAddress.Loopback, nextPort);
+                await _sender.ConnectAsync(IPAddress.IPv6Loopback, nextPort);
 
                 Thread.Sleep(StaticHelpers.Timeout);
                 if(_ack == _myToken && _myToken != 0)
