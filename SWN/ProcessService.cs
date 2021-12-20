@@ -30,6 +30,7 @@ public class ProcessService
 
     public async Task tcpListen(int port, int nextPort)
     {
+        await Task.Yield();
         TcpListener _listener = new TcpListener(IPAddress.IPv6Loopback, port); 
         _listener.Start();
 
@@ -95,6 +96,7 @@ public class ProcessService
 
     public async Task tokenRingAlgorithm(int prevPort, int port, int nextPort, int tkn)
     {
+        await Task.Yield();
         //Console.WriteLine($"Running token: {Thread.CurrentThread.ManagedThreadId}");
         Random rng = new Random(port);
     
