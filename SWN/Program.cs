@@ -22,11 +22,7 @@ namespace SWN
             List<Task> tasks = new List<Task>();
             foreach(var process in processes)
             {
-                tasks.Add(process.tcpListen(process.Port, process.NextPort));  
-            }
-
-            foreach(var process in processes)
-            {
+                tasks.Add(process.udpListen(process.Port, process.NextPort));  
                 tasks.Add(process.tokenRingAlgorithm(process.PrevPort, process.Port, process.NextPort, process.Tkn)); 
             }
 

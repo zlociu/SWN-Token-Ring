@@ -11,10 +11,10 @@ public class ProcessService
     private int _newToken;
     private int _myToken;
     private int _ack;
-    public int PrevPort {get;}
-    public int Port {get;}
-    public int NextPort {get;}
-    public int Tkn {get;}
+    public int PrevPort {get;init;}
+    public int Port {get;init;}
+    public int NextPort {get;init;}
+    public int Tkn {get;init;}
 
     public ProcessService(int prevPort, int port, int nextPort, int tkn)
     {
@@ -28,63 +28,51 @@ public class ProcessService
         _ack = 0;
     }
 
-    public async Task tcpListen(int port, int nextPort)
+    public async Task udpListen(int port, int nextPort)
     {
         await Task.Yield();
-        TcpListener _listener = new TcpListener(IPAddress.IPv6Loopback, port); 
-        _listener.Start();
+        UdpClient _listener = new UdpClient(port); 
+        UdpClient _sender = new UdpClient();
 
         // Console.WriteLine($"Running listener: {Thread.CurrentThread.ManagedThreadId}");
         Random rng = new Random(port);
-        int iter = 0;
-
-        // Console.WriteLine(_sender.Connected);
 
         while(true)
         {
-            iter++;
             try
             {
-                TcpClient client = await _listener.AcceptTcpClientAsync();
                 byte[] buffer = new byte[64];
-                await client.GetStream().ReadAsync(buffer, 0, 64).ContinueWith(async (count) =>
+                await _listener.ReceiveAsync().ContinueWith(async (data) =>
                 {
-                    int len = count.Result;
-                    // while(true)
-                    // {
-                        string[] values = Encoding.ASCII.GetString(buffer,0,len).Split(':');
-                        Message msg = new Message(  int.Parse(values[0]), 
-                                                    int.Parse(values[1]), 
-                                                    (MsgType) Enum.Parse(typeof(MsgType), values[2]));
-                        if(msg.Port != port) 
+                    UdpReceiveResult datagram = data.Result;
+                    string[] values = Encoding.ASCII.GetString(datagram.Buffer,0,datagram.Buffer.Length).Split(':');
+                    Message msg = new Message(  int.Parse(values[0]), 
+                                                int.Parse(values[1]), 
+                                                (MsgType) Enum.Parse(typeof(MsgType), values[2]));
+                    if(msg.Port != port) 
+                    {
+                        //to nie jest wiadomosc do mnie, wysylam dalej
+                        if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit)
                         {
-                            //to nie jest wiadomosc do mnie, wysylam dalej
-                            if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit)
+                            await _sender.SendAsync(datagram.Buffer, 
+                                                    datagram.Buffer.Length, 
+                                                    new IPEndPoint(IPAddress.Loopback, nextPort));
+                        }       
+                    }
+                    else
+                    {
+                        if(msg.Type == MsgType.TOKEN)
+                        {
+                            if(_newToken < msg.Value && _myToken < msg.Value)
                             {
-                                TcpClient _sender = new TcpClient();
-                                await _sender.ConnectAsync(IPAddress.IPv6Loopback, nextPort);
-                                await _sender.GetStream().WriteAsync(buffer, 0, len);
-                                _sender.GetStream().Close();
-                                _sender.Close();
-                            }       
+                                _newToken = msg.Value;
+                            } 
                         }
                         else
                         {
-                            if(msg.Type == MsgType.TOKEN)
-                            {
-                                if(_newToken < msg.Value && _myToken < msg.Value)
-                                {
-                                    _newToken = msg.Value;
-                                    //Console.WriteLine($"{port}: Get newer TOKEN {_newToken}");
-                                } 
-                            }
-                            else
-                            {
-                                if(_ack < msg.Value) _ack = msg.Value;
-                            } 
-                        }
-                        // len = await client.GetStream().ReadAsync(buffer, 0, 64);
-                    // }
+                            if(_ack < msg.Value) _ack = msg.Value;
+                        } 
+                    }
                 });
             }
             catch(Exception ex)
@@ -97,9 +85,10 @@ public class ProcessService
     public async Task tokenRingAlgorithm(int prevPort, int port, int nextPort, int tkn)
     {
         await Task.Yield();
-        //Console.WriteLine($"Running token: {Thread.CurrentThread.ManagedThreadId}");
         Random rng = new Random(port);
-    
+        UdpClient _sender = new UdpClient();
+        _sender.Connect(IPAddress.Loopback, nextPort);
+
         if(tkn == 1)
         {
             _myToken = 1;
@@ -107,12 +96,9 @@ public class ProcessService
             Message msg = new Message(nextPort, 1, MsgType.TOKEN);
             if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
             {
-                TcpClient _sender = new TcpClient();
-                await _sender.ConnectAsync(IPAddress.IPv6Loopback, nextPort);
-                await _sender.GetStream().WriteAsync(Encoding.ASCII.GetBytes(msg.ToString()));
+                var buffer = Encoding.ASCII.GetBytes(msg.ToString());
+                await _sender.SendAsync(buffer, buffer.Length);
                 Console.WriteLine($"{port}: Send TOKEN {_myToken}");
-                _sender.GetStream().Close();
-                _sender.Close();
             }
             
         }
@@ -125,9 +111,6 @@ public class ProcessService
             }
             else
             {
-                TcpClient _sender = new TcpClient();
-                await _sender.ConnectAsync(IPAddress.IPv6Loopback, nextPort);
-
                 Thread.Sleep(StaticHelpers.Timeout);
                 if(_ack == _myToken && _myToken != 0)
                 {
@@ -143,7 +126,8 @@ public class ProcessService
                     Message msg = new Message(prevPort, _newToken, MsgType.ACK);
                     if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
                     {
-                        await _sender.GetStream().WriteAsync(Encoding.ASCII.GetBytes(msg.ToString()));
+                        var buffer = Encoding.ASCII.GetBytes(msg.ToString());
+                        await _sender.SendAsync(buffer, buffer.Length);
                         Console.WriteLine($"{port}: Send ACK {_newToken}");
                     }
                     // utworz moj token
@@ -155,7 +139,8 @@ public class ProcessService
                     Message msg2 = new Message(nextPort, _myToken, MsgType.TOKEN);
                     if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
                     {
-                        await _sender.GetStream().WriteAsync(Encoding.ASCII.GetBytes(msg2.ToString()));
+                        var buffer = Encoding.ASCII.GetBytes(msg.ToString());
+                        await _sender.SendAsync(buffer, buffer.Length);
                         Console.WriteLine($"{port}: Send TOKEN {_myToken}");
                     }
                 }
@@ -168,13 +153,11 @@ public class ProcessService
                     Message msg = new Message(nextPort, _myToken, MsgType.TOKEN);
                     if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
                     {
-                        await _sender.GetStream().WriteAsync(Encoding.ASCII.GetBytes(msg.ToString()));
+                        var buffer = Encoding.ASCII.GetBytes(msg.ToString());
+                        await _sender.SendAsync(buffer, buffer.Length);
                         Console.WriteLine($"{port}: Resend TOKEN {_myToken}");
                     }
                 }
-
-                _sender.GetStream().Close();
-                _sender.Close();
             }
         }
     }
