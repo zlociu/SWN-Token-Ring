@@ -22,7 +22,7 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int, startToke
 
     member this.Port with get() = _port
 
-    member this.udpListen() = 
+    member this.UdpListen() = 
         async{
             Task.Yield() |> ignore
             let _listener = new UdpClient(_port)
@@ -55,7 +55,7 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int, startToke
                 | ex -> printfn "Exception: %s" ex.Message
         }
 
-    member this.tokenRingAlgorithm() =
+    member this.TokenRingAlgorithm() =
         async{
             Task.Yield() |> ignore
             let rng = new Random(_port)

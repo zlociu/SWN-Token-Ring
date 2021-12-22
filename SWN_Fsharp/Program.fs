@@ -21,8 +21,8 @@ let main argv =
         new ProcessService(elem) |> processes.Add 
 
     for proc in processes do
-        tasks.Add (proc.udpListen() |> Async.StartAsTask)
-        tasks.Add (proc.tokenRingAlgorithm() |> Async.StartAsTask)
+        tasks.Add (proc.UdpListen() |> Async.StartAsTask)
+        tasks.Add (proc.TokenRingAlgorithm() |> Async.StartAsTask)
     
     tasks.ToArray() |> Task.WaitAny 
         
