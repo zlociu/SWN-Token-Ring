@@ -1,8 +1,5 @@
 // Learn more about F# at http://docs.microsoft.com/dotnet/fsharp
 
-open System
-open System.Net
-open System.Threading
 open System.Threading.Tasks
 open System.Collections.Generic
 
@@ -12,6 +9,7 @@ open ProcessService
 let main argv =
     printfn "Creating processes"
     let processes = new List<ProcessService>()
+    let tasks = new List<Task>()
 
     let ports = [   (50124, 50120, 50121, true); 
                     (50120, 50121, 50122, false); 
@@ -22,10 +20,9 @@ let main argv =
     for elem in ports do
         new ProcessService(elem) |> processes.Add 
 
-    let tasks = new List<Task>()
     for proc in processes do
-        tasks.Add (proc.udpListen proc.Port proc.NextPort |> Async.StartAsTask)
-        tasks.Add (proc.tokenRingAlgorithm proc.PrevPort  proc.Port  proc.NextPort  proc.Tkn |> Async.StartAsTask)
+        tasks.Add (proc.udpListen() |> Async.StartAsTask)
+        tasks.Add (proc.tokenRingAlgorithm() |> Async.StartAsTask)
     
     tasks.ToArray() |> Task.WaitAny 
         
