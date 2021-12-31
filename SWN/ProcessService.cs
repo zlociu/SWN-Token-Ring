@@ -30,7 +30,7 @@ public class ProcessService
         _ack = 0;
     }
 
-    public async Task UdpListen()
+    public async Task UdpListenAsync()
     {
         await Task.Yield();
         UdpClient _listener = new UdpClient(_port); 
@@ -84,7 +84,7 @@ public class ProcessService
         }
     }
 
-    public async Task TokenRingAlgorithm()
+    public async Task TokenRingAlgorithmAsync()
     {
         await Task.Yield();
         Random rng = new Random(_port);

@@ -22,8 +22,8 @@ namespace SWN
             List<Task> tasks = new List<Task>();
             foreach(var process in processes)
             {
-                tasks.Add(process.UdpListen());  
-                tasks.Add(process.TokenRingAlgorithm()); 
+                tasks.Add(process.UdpListenAsync());  
+                tasks.Add(process.TokenRingAlgorithmAsync()); 
             }
 
             Task.WaitAll(tasks.ToArray());
