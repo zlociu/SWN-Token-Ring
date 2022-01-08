@@ -5,24 +5,22 @@ open System.Collections.Generic
 
 open ProcessService
 
-[<EntryPoint>]
-let main argv =
-    printfn "Creating processes"
-    let processes = new List<ProcessService>()
-    let tasks = new List<Task>()
+printfn "Creating processes"
+let processes = new List<ProcessService>()
+let tasks = new List<Task>()
 
-    let ports = [   (50124, 50120, 50121, true); 
-                    (50120, 50121, 50122, false); 
-                    (50121, 50122, 50123, false); 
-                    (50122, 50123, 50124, false); 
-                    (50123, 50124, 50120, false)]
-    
-    for elem in ports do
-        new ProcessService(elem) |> processes.Add 
+let ports = [   (50124, 50120, 50121, true); 
+                (50120, 50121, 50122, false); 
+                (50121, 50122, 50123, false); 
+                (50122, 50123, 50124, false); 
+                (50123, 50124, 50120, false)]
 
-    for proc in processes do
-        tasks.Add (proc.UdpListenAsync() |> Async.StartAsTask)
-        tasks.Add (proc.TokenRingAlgorithmAsync() |> Async.StartAsTask)
-    
-    tasks.ToArray() |> Task.WaitAny 
+for elem in ports do
+    new ProcessService(elem) |> processes.Add 
+
+for proc in processes do
+    Task.Run( fun () -> proc.UdpListenAsync() :> Task ) |> tasks.Add 
+    Task.Run( fun () -> proc.TokenRingAlgorithmAsync() :> Task) |> tasks.Add 
+
+let _ = tasks.ToArray() |> Task.WaitAny
         

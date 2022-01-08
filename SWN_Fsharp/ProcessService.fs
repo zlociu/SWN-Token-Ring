@@ -23,8 +23,7 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int, startToke
     member this.Port with get() = _port
 
     member this.UdpListenAsync() = 
-        async{
-            Task.Yield() |> ignore
+        task{
             let _listener = new UdpClient(_port)
             let _sender = new UdpClient()
             let rng = new Random(_port)
@@ -56,13 +55,12 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int, startToke
         }
 
     member this.TokenRingAlgorithmAsync() =
-        async{
-            Task.Yield() |> ignore
+        task{
             let rng = new Random(_port)
             let _sender = new UdpClient()
             _sender.Connect(IPAddress.Loopback, _nextPort)
 
-            if _tkn = true then
+            if _tkn  = true then
                 _myToken <- 1
                 Thread.Sleep 5
                 let msg = new Message(_nextPort, 1, MsgType.TOKEN)
@@ -112,7 +110,7 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int, startToke
                         // druga opcja, dostalem stary zeton, ale mam _ack nowsze
                         let msg = Message(_nextPort, _myToken, MsgType.TOKEN)
                         if rng.NextDouble() > StaticHelper.BreakConnectionLimit then
-                            let buffer = msg.ToString() |> Encoding.ASCII.GetBytes
+                            let buffer = msg.ToString() |> Encoding.ASCII.GetBytes 
                             (buffer, buffer.Length) 
                             |> _sender.SendAsync 
                             |> Async.AwaitTask |> ignore
