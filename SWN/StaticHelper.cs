@@ -1,5 +1,8 @@
 public static class StaticHelpers
 {
+    ///<summary>
+    ///Timeout in milliseconds
+    ///</summary>
     public static readonly int Timeout = 50;
     
     ///<summary> 
