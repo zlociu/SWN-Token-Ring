@@ -16,16 +16,42 @@ public class ProcessService
 
     public int Port {get => _port;}
 
-    public ProcessService(int prevPort, int port, int nextPort, int tkn)
+    private ProcessService(int port)
     {
-        _prevPort = prevPort;
+        _prevPort = port - 1;
         _port = port;
-        _nextPort = nextPort;
-        _tkn = tkn;
+        _nextPort = port + 1;
+        _tkn = 0;
         
         _newToken = 0;
         _myToken = 0;
         _ack = 0;
+    }
+
+    ///<summary>
+    ///Create ProcessService object with specified port. <para></para>
+    ///Prev port is 1 smaller , next is 1 bigger, have NO token
+    ///</summary>
+    public static ProcessService Create(int port)
+    {
+        return new ProcessService(port);
+    }
+
+    public ProcessService AddNextPort(int port)
+    {
+        this._nextPort = port;
+        return this;
+    }
+    public ProcessService AddPrevPort(int port)
+    {
+        this._prevPort = port;
+        return this;
+    }
+
+    public ProcessService AddStartToken()
+    {
+        this._tkn = 1;
+        return this;
     }
 
     public async Task UdpListenAsync()
@@ -63,10 +89,7 @@ public class ProcessService
                     {
                         if(msg.Type == MsgType.TOKEN)
                         {
-                            if(_newToken < msg.Value && _myToken < msg.Value)
-                            {
-                                _newToken = msg.Value;
-                            } 
+                            if(_newToken < msg.Value && _myToken < msg.Value) _newToken = msg.Value;
                         }
                         else
                         {
@@ -160,5 +183,13 @@ public class ProcessService
                 }
             }
         }
+    }
+
+    public Task[] GetProcessTasks()
+    {
+        return new Task[]{
+            UdpListenAsync(),
+            TokenRingAlgorithmAsync()
+        };
     }
 }

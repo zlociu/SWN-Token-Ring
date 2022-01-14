@@ -5,18 +5,15 @@ using System.Collections.Generic;
 
 Console.WriteLine("Creating processes");
 List<ProcessService> processes = new List<ProcessService>{
-    new ProcessService(50124, 50120, 50121, 1),
-    new ProcessService(50120, 50121, 50122, 0),
-    new ProcessService(50121, 50122, 50123, 0),
-    new ProcessService(50122, 50123, 50124, 0),
-    new ProcessService(50123, 50124, 50120, 0)
+    ProcessService.Create(50120).AddPrevPort(50124).AddStartToken(),
+    ProcessService.Create(50121),
+    ProcessService.Create(50122),
+    ProcessService.Create(50123),
+    ProcessService.Create(50124).AddNextPort(50120)
 };
 
-List<Task> tasks = new List<Task>();
+List<Task> tasks = new();
 foreach(var process in processes)
-{
-    tasks.Add(process.UdpListenAsync());  
-    tasks.Add(process.TokenRingAlgorithmAsync()); 
-}
+    tasks.AddRange(process.GetProcessTasks());  
 
 Task.WaitAll(tasks.ToArray());
