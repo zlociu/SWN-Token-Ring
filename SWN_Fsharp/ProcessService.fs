@@ -22,7 +22,7 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int, startToke
 
     member this.Port with get() = _port
 
-    member this.UdpListenAsync() = 
+    member this.UdpListenAsync() : Task = 
         task{
             let _listener = new UdpClient(_port)
             let _sender = new UdpClient()
@@ -54,7 +54,7 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int, startToke
                 | ex -> printfn "Exception: %s" ex.Message
         }
 
-    member this.TokenRingAlgorithmAsync() =
+    member this.TokenRingAlgorithmAsync() : Task =
         task{
             let rng = new Random(_port)
             let _sender = new UdpClient()
@@ -100,7 +100,7 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int, startToke
                         //wyslij token dalej (skonczylem przetwarzac)
                         let msg2 = new Message(_nextPort, _myToken, MsgType.TOKEN)
                         if rng.NextDouble() > StaticHelper.BreakConnectionLimit then
-                            let buffer = msg.ToString() |> Encoding.ASCII.GetBytes
+                            let buffer = msg2.ToString() |> Encoding.ASCII.GetBytes
                             (buffer, buffer.Length) 
                             |> _sender.SendAsync 
                             |> Async.AwaitTask |> ignore

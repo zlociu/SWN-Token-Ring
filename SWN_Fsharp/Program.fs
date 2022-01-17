@@ -19,8 +19,8 @@ for elem in ports do
     new ProcessService(elem) |> processes.Add 
 
 for proc in processes do
-    Task.Run( fun () -> proc.UdpListenAsync() :> Task ) |> tasks.Add 
-    Task.Run( fun () -> proc.TokenRingAlgorithmAsync() :> Task) |> tasks.Add 
+    Task.Run( fun () -> proc.UdpListenAsync()) |> tasks.Add 
+    Task.Run( fun () -> proc.TokenRingAlgorithmAsync()) |> tasks.Add 
 
 let _ = tasks.ToArray() |> Task.WaitAny
         

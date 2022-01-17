@@ -162,7 +162,7 @@ public class ProcessService
                     Message msg2 = new Message(_nextPort, _myToken, MsgType.TOKEN);
                     if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
                     {
-                        var buffer = Encoding.ASCII.GetBytes(msg.ToString());
+                        var buffer = Encoding.ASCII.GetBytes(msg2.ToString());
                         await _sender.SendAsync(buffer, buffer.Length);
                         Console.WriteLine($"{_port}: Send TOKEN {_myToken}");
                     }
