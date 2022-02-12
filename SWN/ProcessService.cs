@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
+using System.Collections.Generic;
 
 public class ProcessService
 {
@@ -12,7 +13,7 @@ public class ProcessService
     private int _prevPort; 
     private int _port; 
     private int _nextPort;
-    private int _tkn;
+    private bool _tkn;
 
     public int Port {get => _port;}
 
@@ -21,7 +22,7 @@ public class ProcessService
         _prevPort = port - 1;
         _port = port;
         _nextPort = port + 1;
-        _tkn = 0;
+        _tkn = false;
         
         _newToken = 0;
         _myToken = 0;
@@ -29,7 +30,7 @@ public class ProcessService
     }
 
     ///<summary>
-    ///Create ProcessService object with specified port. <para></para>
+    ///Create new ProcessService object with specified port. <para></para>
     ///Prev port is 1 smaller , next is 1 bigger, have NO token
     ///</summary>
     public static ProcessService Create(int port)
@@ -37,20 +38,30 @@ public class ProcessService
         return new ProcessService(port);
     }
 
+    ///<summary>
+    ///Set other than default next port. <para></para>
+    ///</summary>
     public ProcessService AddNextPort(int port)
     {
         this._nextPort = port;
         return this;
     }
+
+    ///<summary>
+    ///Set other than default previous port. <para></para>
+    ///</summary>
     public ProcessService AddPrevPort(int port)
     {
         this._prevPort = port;
         return this;
     }
 
+    ///<summary>
+    ///Add start token to process (should be set only to one process) <para></para>
+    ///</summary>
     public ProcessService AddStartToken()
     {
-        this._tkn = 1;
+        this._tkn = true;
         return this;
     }
 
@@ -59,8 +70,6 @@ public class ProcessService
         await Task.Yield();
         UdpClient _listener = new UdpClient(_port); 
         UdpClient _sender = new UdpClient();
-
-        // Console.WriteLine($"Running listener: {Thread.CurrentThread.ManagedThreadId}");
         Random rng = new Random(_port);
 
         while(true)
@@ -112,19 +121,21 @@ public class ProcessService
         UdpClient _sender = new UdpClient();
         _sender.Connect(IPAddress.Loopback, _nextPort);
 
-        if(_tkn == 1)
+        if(_tkn)
         {
             _myToken = 1;
             Thread.Sleep(5);
-            Message msg = new Message(_nextPort, 1, MsgType.TOKEN);
+            
             if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
             {
+                Message msg = new Message(_nextPort, 1, MsgType.TOKEN);
                 var buffer = Encoding.ASCII.GetBytes(msg.ToString());
                 await _sender.SendAsync(buffer, buffer.Length);
                 Console.WriteLine($"{_port}: Send TOKEN {_myToken}");
             }
             
         }
+
         while(true)
         {
             if(_myToken == 0 && _newToken == 0)
@@ -141,14 +152,14 @@ public class ProcessService
                     Console.WriteLine($"{_port}: Get ACK for sent TOKEN {_myToken}");
                     _myToken = 0;
                 }
-                else if(_newToken > _myToken && _newToken > _ack) // && ((_myToken != 0 && tkn == 1) || tkn == 0))
+                else if(_newToken > _myToken && _newToken > _ack)
                 {
                     //odebrano nowy token
                     Console.WriteLine($"{_port}: Get new TOKEN {_newToken}");
                     //wyslij ACK odbioru
-                    Message msg = new Message(_prevPort, _newToken, MsgType.ACK);
                     if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
                     {
+                        Message msg = new Message(_prevPort, _newToken, MsgType.ACK);
                         var buffer = Encoding.ASCII.GetBytes(msg.ToString());
                         await _sender.SendAsync(buffer, buffer.Length);
                         Console.WriteLine($"{_port}: Send ACK {_newToken}");
@@ -159,10 +170,10 @@ public class ProcessService
                     //sumuluj dzialanie
                     Thread.Sleep(5);
                     //wyslij token dalej (skonczylem przetwarzac)
-                    Message msg2 = new Message(_nextPort, _myToken, MsgType.TOKEN);
                     if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
                     {
-                        var buffer = Encoding.ASCII.GetBytes(msg2.ToString());
+                        Message msg = new Message(_nextPort, _myToken, MsgType.TOKEN);
+                        var buffer = Encoding.ASCII.GetBytes(msg.ToString());
                         await _sender.SendAsync(buffer, buffer.Length);
                         Console.WriteLine($"{_port}: Send TOKEN {_myToken}");
                     }
@@ -171,11 +182,9 @@ public class ProcessService
                 { 
                     // nie dostalem nowego tokenu oraz nie dostalem ACK, wysylam ponownie
                     // druga opcja, dostalem stary zeton, ale mam _ack nowsze
-                    //Console.WriteLine($"{port}: {_newToken}, {_myToken}, {_ack}");
-                    
-                    Message msg = new Message(_nextPort, _myToken, MsgType.TOKEN);
                     if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
                     {
+                        Message msg = new Message(_nextPort, _myToken, MsgType.TOKEN);
                         var buffer = Encoding.ASCII.GetBytes(msg.ToString());
                         await _sender.SendAsync(buffer, buffer.Length);
                         Console.WriteLine($"{_port}: Resend TOKEN {_myToken}");
@@ -185,7 +194,7 @@ public class ProcessService
         }
     }
 
-    public Task[] GetProcessTasks()
+    public IEnumerable<Task> GetProcessTasks()
     {
         return new Task[]{
             UdpListenAsync(),
