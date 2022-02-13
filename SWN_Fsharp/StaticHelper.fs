@@ -1,6 +1,9 @@
 module StaticHelper
 
-let Timeout = 50
+///<summary> 
+///Timeout in milliseonds
+///</summary>
+let Timeout = 50 
 
 ///<summary> 
 ///Algorithm break connection when random value is below or equal this value.
