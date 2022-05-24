@@ -37,9 +37,9 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int) =
                     _listener.ReceiveAsync().ContinueWith( fun (result: Task<UdpReceiveResult>) -> 
                         let datagram = result.Result
                         let values = Encoding.ASCII.GetString(datagram.Buffer, 0, datagram.Buffer.Length).Split(':')
-                        let msg = new Message(  Int32.Parse(values.[0]), 
-                                                Int32.Parse(values.[1]), 
-                                                Enum.Parse(typeof<MsgType>, values.[2]) :?> MsgType)
+                        let msg = new Message(  Int32.Parse(values[0]), 
+                                                Int32.Parse(values[1]),
+                                                Enum.Parse<MsgType>(values[2]) )
                         if msg.Port <> _port then
                             //to nie jest wiadomosc do mnie, wysylam dalej
                             if rng.NextDouble() > StaticHelper.BreakConnectionLimit then
@@ -81,7 +81,7 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int) =
                     //nie mam tokenu oraz nie dostalem nowego, spimy dalej
                     Thread.Sleep 5
                 else
-                    StaticHelper.Timeout |> Thread.Sleep 
+                    Thread.Sleep StaticHelper.Timeout
                     if _ack = _myToken && _myToken <> 0 then
                         // otrzymalem ACK na wyslanie tokenu, dotarl, moge usunac token z pamieci
                         (_port, _myToken) ||> printfn "%d: Get ACK for sent TOKEN %d"
@@ -100,8 +100,8 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int) =
                         // utworz moj token
                         _myToken <- _newToken + 1
                         _newToken <- 0
-                        //sumuluj dzialanie
-                        Thread.Sleep(5)
+                        //symuluj dzialanie
+                        Thread.Sleep 5
                         //wyslij token dalej (skonczylem przetwarzac)
                         if rng.NextDouble() > StaticHelper.BreakConnectionLimit then
                             let msg = new Message(_nextPort, _myToken, MsgType.TOKEN)
