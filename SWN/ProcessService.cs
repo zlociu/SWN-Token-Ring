@@ -15,7 +15,7 @@ public class ProcessService
     private int _nextPort;
     private bool _tkn;
 
-    public int Port {get => _port;}
+    public int Port => _port;
 
     private ProcessService(int port)
     {

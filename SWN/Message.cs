@@ -4,19 +4,8 @@ public enum MsgType
     ACK = 2
 }
 
-public record Message
+public record Message(int Port, int Value, MsgType Type)
 {
-    public int Value {get; init;}
-    public MsgType Type {get; init;}
-    public int Port {get; init;}
-
-    public Message(int port, int value, MsgType type)
-    {
-        Value = value;
-        Type = type;
-        Port = port;
-    }
-
     public override string ToString()
     {
         return $"{this.Port}:{this.Value}:{this.Type}";
