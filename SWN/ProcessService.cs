@@ -65,14 +65,13 @@ public class ProcessService
         return this;
     }
 
-    public async Task UdpListenAsync()
+    public async Task UdpListenAsync(CancellationToken cancellationToken)
     {
-        await Task.Yield();
         UdpClient _listener = new UdpClient(_port); 
         UdpClient _sender = new UdpClient();
         Random rng = new Random(_port);
 
-        while(true)
+        while(cancellationToken.IsCancellationRequested == false)
         {
             try
             {
@@ -114,9 +113,8 @@ public class ProcessService
         }
     }
 
-    public async Task TokenRingAlgorithmAsync()
+    public async Task TokenRingAlgorithmAsync(CancellationToken cancellationToken)
     {
-        await Task.Yield();
         Random rng = new(_port);
         UdpClient _sender = new();
         _sender.Connect(IPAddress.Loopback, _nextPort);
@@ -124,7 +122,7 @@ public class ProcessService
         if(_tkn)
         {
             _myToken = 1;
-            Thread.Sleep(5);
+            await Task.Delay(5);
             
             if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
             {
@@ -136,16 +134,16 @@ public class ProcessService
             
         }
 
-        while(true)
+        while(cancellationToken.IsCancellationRequested == false)
         {
             if(_myToken == 0 && _newToken == 0)
             {
                 //nie mam tokenu oraz nie dostalem nowego, spimy dalej
-                Thread.Sleep(5);
+                await Task.Delay(5);
             }
             else
             {
-                Thread.Sleep(StaticHelpers.Timeout);
+                await Task.Delay(StaticHelpers.Timeout);
                 if(_ack == _myToken && _myToken != 0)
                 {
                     // otrzymalem ACK na wyslanie tokenu, dotarl, moge usunac token z pamieci
@@ -168,7 +166,7 @@ public class ProcessService
                     _myToken = _newToken + 1;
                     _newToken = 0;
                     //symuluj dzialanie
-                    Thread.Sleep(5);
+                    await Task.Delay(5);
                     //wyslij token dalej (skonczylem przetwarzac)
                     if(rng.NextDouble() > StaticHelpers.BreakConnectionLimit) 
                     {
@@ -194,11 +192,11 @@ public class ProcessService
         }
     }
 
-    public IEnumerable<Task> GetProcessTasks()
+    public IEnumerable<Task> GetProcessTasks(CancellationToken token)
     {
         return new Task[]{
-            UdpListenAsync(),
-            TokenRingAlgorithmAsync()
+            UdpListenAsync(token),
+            TokenRingAlgorithmAsync(token)
         };
     }
 }
