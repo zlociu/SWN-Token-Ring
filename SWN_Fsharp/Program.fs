@@ -21,8 +21,8 @@ for elem in ports do
 processes[0].AddStartToken() |> ignore
 
 for proc in processes do
-    Task.Run( fun () -> proc.UdpListenAsync()) |> tasks.Add 
-    Task.Run( fun () -> proc.TokenRingAlgorithmAsync()) |> tasks.Add 
+    proc.UdpListenAsync() |> Async.StartAsTask |> tasks.Add 
+    proc.TokenRingAlgorithmAsync() |> Async.StartAsTask |> tasks.Add 
 
-let _ = tasks.ToArray() |> Task.WaitAny
+tasks.ToArray() |> Task.WaitAny |> ignore
         

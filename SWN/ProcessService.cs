@@ -81,9 +81,9 @@ public class ProcessService
                 {
                     UdpReceiveResult datagram = data.Result;
                     string[] values = Encoding.ASCII.GetString(datagram.Buffer,0,datagram.Buffer.Length).Split(':');
-                    Message msg = new Message(  int.Parse(values[0]), 
-                                                int.Parse(values[1]), 
-                                                Enum.Parse<MsgType>(values[2]));
+                    Message msg = new(  Port: int.Parse(values[0]), 
+                                        Value: int.Parse(values[1]), 
+                                        Type: Enum.Parse<MsgType>(values[2]));
                     if(msg.Port != _port) 
                     {
                         //to nie jest wiadomosc do mnie, wysylam dalej

@@ -24,8 +24,8 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int) =
         _tkn <- true
         this
 
-    member this.UdpListenAsync() : Task = 
-        task{
+    member this.UdpListenAsync() = 
+        async{
             let _listener = new UdpClient(_port)
             let _sender = new UdpClient()
             let rng = new Random(_port)
@@ -59,15 +59,15 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int) =
                 | ex -> printfn "Exception: %s" ex.Message
         }
 
-    member this.TokenRingAlgorithmAsync() : Task =
-        task{
+    member this.TokenRingAlgorithmAsync() =
+        async{
             let rng = new Random(_port)
             let _sender = new UdpClient()
             _sender.Connect(IPAddress.Loopback, _nextPort)
 
             if _tkn = true then
                 _myToken <- 1
-                Thread.Sleep 5
+                do! Async.Sleep 5  
                 if rng.NextDouble() > StaticHelper.BreakConnectionLimit then 
                     let msg = new Message(_nextPort, 1, MsgType.TOKEN)
                     let buffer = msg.ToString() |> Encoding.ASCII.GetBytes 
@@ -79,9 +79,9 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int) =
             while _myToken < 51 do
                 if _myToken = 0 && _newToken = 0 then
                     //nie mam tokenu oraz nie dostalem nowego, spimy dalej
-                    Thread.Sleep 5
+                    do! Async.Sleep 5   
                 else
-                    Thread.Sleep StaticHelper.Timeout
+                    do! Async.Sleep StaticHelper.Timeout 
                     if _ack = _myToken && _myToken <> 0 then
                         // otrzymalem ACK na wyslanie tokenu, dotarl, moge usunac token z pamieci
                         (_port, _myToken) ||> printfn "%d: Get ACK for sent TOKEN %d"
@@ -101,7 +101,7 @@ type ProcessService(leftNeighPort:int, myPort:int, rigthNeighPort:int) =
                         _myToken <- _newToken + 1
                         _newToken <- 0
                         //symuluj dzialanie
-                        Thread.Sleep 5
+                        do! Async.Sleep 5 
                         //wyslij token dalej (skonczylem przetwarzac)
                         if rng.NextDouble() > StaticHelper.BreakConnectionLimit then
                             let msg = new Message(_nextPort, _myToken, MsgType.TOKEN)
